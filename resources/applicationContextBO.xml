@@ -1,0 +1,31 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<beans xmlns = "http://www.springframework.org/schema/beans"
+   xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:context = "http://www.springframework.org/schema/context"
+   xsi:schemaLocation = "http://www.springframework.org/schema/beans
+   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+   http://www.springframework.org/schema/context
+   http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+		
+	<context:annotation-config/>
+	
+	<bean id="procesoWorkflowBO" class="mx.com.amx.unotv.workflow.bo.ProcesoWorkflowBO"></bean>
+	
+	<bean id="llamadasWSBO" class="mx.com.amx.unotv.workflow.bo.LlamadasWSBO"></bean>
+	
+	<bean id="llamadasWSDAO" class="mx.com.amx.unotv.workflow.bo.LlamadasWSDAO"></bean>
+	
+	<bean id="jsonBO" class="mx.com.amx.unotv.workflow.bo.JsonBO"></bean>
+	
+	<bean id="correoBO" class="mx.com.amx.unotv.workflow.bo.CorreoBO"></bean>
+	
+	<bean id="podcastBO" class="mx.com.amx.unotv.workflow.bo.PodcastBO"></bean>
+	
+	<bean id="remplazaHTMLBO" class="mx.com.amx.unotv.workflow.bo.RemplazaHTMLBO"></bean>
+	
+	<bean id="callElasticsearchBO" class="mx.com.amx.unotv.workflow.bo.CallElasticsearchBO"></bean>
+	
+	<bean id="ampBO" class="mx.com.amx.unotv.workflow.bo.AmpBO"></bean>	
+		
+		
+</beans>

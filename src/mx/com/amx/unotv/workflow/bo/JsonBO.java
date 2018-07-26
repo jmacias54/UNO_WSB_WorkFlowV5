@@ -138,7 +138,6 @@ public class JsonBO {
 			String ini2="<p dir=\"ltr\">";
 			String fin="</p>";
 			
-			LOG.debug("RTFContenido: "+RTFContenido);
 			//Limpia Red Social
 			//LOG.debug("ini: "+ini);
 			//LOG.debug("fin: "+fin);

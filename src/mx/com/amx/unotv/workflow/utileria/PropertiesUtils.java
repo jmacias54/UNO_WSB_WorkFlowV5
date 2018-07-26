@@ -86,8 +86,7 @@ public class PropertiesUtils {
 			parametrosDTO.setMet_wsd_WorkFlow_insertNotaTag(propsServer.getProperty("met_wsd_WorkFlow_insertNotaTag"));
 			parametrosDTO.setMet_wsd_WorkFlow_deleteNotaTag(propsServer.getProperty("met_wsd_WorkFlow_deleteNotaTag"));
 			parametrosDTO.setMet_wsd_WorkFlow_deleteNotaBD(propsServer.getProperty("met_wsd_WorkFlow_deleteNotaBD"));
-			parametrosDTO.setMet_wsd_WorkFlow_deleteNotaHistoricoBD(propsServer.getProperty("met_wsd_WorkFlow_deleteNotaHistoricoBD"));
-			parametrosDTO.setMet_wsd_WorkFlow_getNotasMagazine(propsServer.getProperty("met_wsd_WorkFlow_getNotasMagazine"));
+			parametrosDTO.setMet_wsd_WorkFlow_deleteNotaHistoricoBD(propsServer.getProperty("met_wsd_WorkFlow_deleteNotaHistoricoBD"));			
 			parametrosDTO.setMet_wsd_WorkFlow_getRelacionadasbyIdCategoria(propsServer.getProperty("met_wsd_WorkFlow_getRelacionadasbyIdCategoria"));
 			parametrosDTO.setMet_wsd_WorkFlow_getExtraInfoContent(propsServer.getProperty("met_wsd_WorkFlow_getExtraInfoContent"));			
 			parametrosDTO.setMet_wsb_Utils_getParameter(propsServer.getProperty("met_wsb_Utils_getParameter"));						
@@ -96,6 +95,12 @@ public class PropertiesUtils {
 			parametrosDTO.setCorreo_error_asunto(propsServer.getProperty("correo_error_asunto"));			
 			parametrosDTO.setCorreo_error_cuerpo(propsServer.getProperty("correo_error_cuerpo"));
 			parametrosDTO.setCorreo_error_smtpsender(propsServer.getProperty("correo_error_smtpsender"));
+			
+			parametrosDTO.setJs_amp_ooyala_player(propsServer.getProperty("js_amp_ooyala_player"));
+			parametrosDTO.setJs_amp_youtube(propsServer.getProperty("js_amp_youtube"));
+			parametrosDTO.setJs_amp_twitter(propsServer.getProperty("js_amp_twitter"));
+			parametrosDTO.setJs_amp_instagram(propsServer.getProperty("js_amp_instagram"));
+			parametrosDTO.setJs_amp_facebook(propsServer.getProperty("js_amp_facebook"));
 						
 		} catch (Exception ex) {
 			parametrosDTO = new ParametrosDTO();

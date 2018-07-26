@@ -91,7 +91,6 @@ public class LlamadasWSDAO {
 				respuesta=restTemplate.postForObject(URL_WS_BASE+parametrosDTO.getMet_wsd_WorkFlow_updateNotaHistoricoBD(), entity, Integer.class);
 				LOG.debug("updateNotaHistoricoBD: "+respuesta);											
 				LOG.info("graylog-nota-actualizada");
-				LOG.info("graylog-nota-insertada");
 				LOG.info("graylog-actualiza-"+contentDTO.getFcIdTipoNota());				
 				LOG.info("graylog-actualiza-"+contentDTO.getFcSeccion());
 				LOG.info("graylog-actualiza-"+contentDTO.getFcTipoSeccion());
@@ -322,15 +321,14 @@ public class LlamadasWSDAO {
 		ContentDTO[] arrayContentsRecibidos=null;
 		ArrayList<ContentDTO> listRelacionadas=null;
 		try {
-			String URL_WS =parametrosDTO.getUrl_dominio_dat()+parametrosDTO.getUrl_wsd_WorkFlow()+parametrosDTO.getMet_wsd_WorkFlow_getNotasMagazine();
+			String URL_WS =parametrosDTO.getUrl_dominio_dat()+"/MX_UNO_WSD_WorkFlow/rest/workflow-controller/getNotasMagazine";
 			LOG.debug("URL_WS: "+URL_WS);
 			MultiValueMap<String, Object> parts;
 			parts = new LinkedMultiValueMap<String, Object>();
 			parts.add("idMagazine", idMagazine);
 			parts.add("idContenido", idContenido);
 			arrayContentsRecibidos=restTemplate.postForObject(URL_WS, parts, ContentDTO[].class);
-			listRelacionadas=new ArrayList<ContentDTO>(Arrays.asList(arrayContentsRecibidos));
-			
+			listRelacionadas=new ArrayList<ContentDTO>(Arrays.asList(arrayContentsRecibidos));			
 		}catch(RestClientResponseException rre){
 			LOG.error("RestClientResponseException getNotasMagazine [WS DAO]: " + rre.getResponseBodyAsString());
 			LOG.error("RestClientResponseException getNotasMagazine [WS DAO]: ", rre);

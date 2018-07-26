@@ -8,11 +8,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
+
+import javax.crypto.CipherInputStream;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import mx.com.amx.unotv.workflow.bo.exception.AmpBOException;
 import mx.com.amx.unotv.workflow.bo.exception.ProcesoWorkflowException;
@@ -25,6 +29,8 @@ public class AmpBO {
 
 	//LOG
 	private static Logger LOG  = Logger.getLogger(AmpBO.class);
+	@Autowired
+	private LlamadasWSDAO llamadasWSDAO;
 	
 	
 	/**
@@ -114,21 +120,21 @@ public class AmpBO {
 				HTML = HTML.replace("$WCM_STYLES$",readHTMLWebServer.getResourceWebServer(parametrosDTO.getURL_WEBSERVER_CSS_AMP()).trim());
 			} catch(Exception e) {
 				HTML = HTML.replace("$WCM_STYLES$", "");
-				LOG.error("Error al remplazar $WCM_STYLES$");
+				LOG.error("Error al remplazar $WCM_STYLES$",e);
 			}
 			
 			//"$WCM_NAVEGACION_COMSCORE$ 
 			try {		
 				HTML = HTML.replace("$WCM_NAVEGACION_COMSCORE$", contentDTO.getFcTipoSeccion() + "." + contentDTO.getFcSeccion()+"."+ contentDTO.getFcIdCategoria()+ "." + parametrosDTO.getPathDetalle() + "." + contentDTO.getFcNombre());
 			} catch (Exception e) {
-				LOG.error("Error al sustituir navegacion  comscore");
+				LOG.error("Error al sustituir navegacion  comscore",e);
 			}
 			
 			try {
 				HTML = HTML.replace("$WCM_TITLE_CONTENIDO$",StringEscapeUtils.escapeHtml(contentDTO.getFcTitulo().trim()));
 			} catch(Exception e) {
 				HTML = HTML.replace("$WCM_TITLE_CONTENIDO$", "");
-				LOG.error("Error al remplazar $WCM_TITLE_CONTENIDO$");
+				LOG.error("Error al remplazar $WCM_TITLE_CONTENIDO$",e);
 			}
 			try {
 				SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
@@ -150,8 +156,7 @@ public class AmpBO {
 			} catch (Exception e) {
 				HTML = HTML.replace("$WCM_AUTOR$", "");
 				LOG.error("Error al remplazar $WCM_AUTOR$");
-			}
-			
+			}			
 			
 			try {
 				String lugar = contentDTO.getFcLugar() == null? "": contentDTO.getFcLugar();
@@ -197,27 +202,35 @@ public class AmpBO {
 				HTML = HTML.replace("$WCM_FUENTE$", StringEscapeUtils.escapeHtml(fuente));
 			} catch (Exception e) {
 				HTML = HTML.replace("$WCM_FUENTE$", "");
-				LOG.error("Error al remplazar $WCM_FUENTE$");
+				LOG.error("Error al remplazar $WCM_FUENTE$",e);
 			}
-			
-			
+						
 			//Video o Imagen principal			
 			try {					
-				HTML = HTML.replace("$WCM_MEDIA_CONTENT$", getMediaContentAMP(contentDTO));		
+				HTML = HTML.replace("$WCM_MEDIA_CONTENT$", getMediaContentAMP(contentDTO));								
 			} catch(Exception e) {
 				HTML = HTML.replace("$WCM_MEDIA_CONTENT$", "");
-				LOG.error("Error al remplazar $WCM_MEDIA_CONTENT$");
+				LOG.error("Error al remplazar $WCM_MEDIA_CONTENT$",e);
 			}
 			
 			//Remplaza contenido
 			try {						
-				String aux_rtf_contenido = cambiaCaracteres(getEmbedPostAMP(contentDTO.getClRtfContenido()));
+				
+				int inicio = contentDTO.getClRtfContenido().indexOf("<p");
+				int fin  = contentDTO.getClRtfContenido().indexOf("</p>", inicio+1);
+				
+				String aux_substring = "<"+contentDTO.getClRtfContenido().substring(inicio+1, fin)+"</p>";				
+				String content_banner = aux_substring+"<div class=\"banner\"><amp-ad width=\"300\" height=\"250\" layout=\"fixed\" type=\"doubleclick\" data-slot=\""+getUrlAdServer(contentDTO)+"MB08\"></amp-ad></div>";				
+				String rtfContentBanner = contentDTO.getClRtfContenido().replace(aux_substring, content_banner);
+				
+				String aux_rtf_contenido = cambiaCaracteres(getEmbedPostAMP(rtfContentBanner));
 				aux_rtf_contenido = aux_rtf_contenido.replace("<iframe", "<amp-iframe resizable");
 				aux_rtf_contenido = aux_rtf_contenido.replace("</iframe>", "</amp-iframe>");				
+								
 				HTML = HTML.replace("$WCM_RTF_CONTENIDO$", aux_rtf_contenido);
 			} catch (Exception e) {
 				HTML = HTML.replace("$WCM_RTF_CONTENIDO$", "");
-				LOG.error("Error al remplazar $WCM_RTF_CONTENIDO$");
+				LOG.error("Error al remplazar $WCM_RTF_CONTENIDO$",e);
 			}	
 					
 			//Remplazamos la galeria
@@ -256,23 +269,136 @@ public class AmpBO {
 				
 				Date date = inputFormat.parse(contentDTO.getFdFechaPublicacion().toString());				
 				String strFecha = dateFormat.format(date);				
-				HTML = HTML.replace("$WCM_FECHA_PUBLISHED$",strFecha);
-				
-				Date dateMod = inputFormat.parse(contentDTO.getFcFecha().toString());				
-				String strFechaMod = dateFormat.format(dateMod);				
+				HTML = HTML.replace("$WCM_FECHA_PUBLISHED$",strFecha);						
+				String strFechaMod = dateFormat.format(new Date());				
 				HTML = HTML.replace("$WCM_FECHA_MODIFIED$",strFechaMod);				
 			} catch (Exception e) {
 				HTML = HTML.replace("$WCM_FECHA_PUBLISHED$", "");
 				HTML = HTML.replace("$WCM_FECHA_MODIFIED$", "");
 				LOG.error("Error al remplazar $WCM_FECHA_PUBLISHED$",e);
 			}
+						
+			//Notas Relacionadas
+			try {											
+				HTML = HTML.replace("$WCM_LIST_RELACIONADAS$",getRelacionadas(contentDTO, parametrosDTO));
+				
+			} catch (Exception e) {
+				LOG.error("Error al sustituir relacionadas");
+				HTML = HTML.replace("$WCM_LIST_RELACIONADAS$","");
+			}
+			
+			//URL AD-Server
+			try {											
+				HTML = HTML.replace("$WCM_URL_BANNER$",getUrlAdServer(contentDTO));				
+			} catch (Exception e) {
+				LOG.error("Error al sustituir WCM_URL_BANNER");
+				HTML = HTML.replace("$WCM_URL_BANNER$","/121173452/UnoTV/noticias/inicio/");
+			}
 			
 			
+			//Script
+			try {				
+				if(HTML.contains("<amp-ooyala-player"))
+					HTML = HTML.replace("$WCM_JS_OOYALA$", parametrosDTO.getJs_amp_ooyala_player());
+				
+				if(HTML.contains("<amp-youtube"))
+					HTML = HTML.replace("$WCM_JS_YOUTUBE$", parametrosDTO.getJs_amp_youtube());
+				
+				if(HTML.contains("<amp-twitter"))
+					HTML = HTML.replace("$WCM_JS_TWITTER$", parametrosDTO.getJs_amp_twitter());
+				
+				if(HTML.contains("<amp-facebook "))
+					HTML = HTML.replace("$WCM_JS_FACEBOOK$", parametrosDTO.getJs_amp_facebook());
+				
+				if(HTML.contains("<amp-instagram"))
+					HTML = HTML.replace("$WCM_JS_INSTAGRAM$", parametrosDTO.getJs_amp_instagram());
+								
+				HTML = HTML.replace("$WCM_JS_OOYALA$", "");
+				HTML = HTML.replace("$WCM_JS_YOUTUBE$", "");
+				HTML = HTML.replace("$WCM_JS_INSTAGRAM$", "");
+				HTML = HTML.replace("$WCM_JS_TWITTER$", "");
+				HTML = HTML.replace("$WCM_JS_FACEBOOK$", "");				
+			} catch (Exception e) {
+				LOG.error("Error al sustituir js amp",e);
+				HTML = HTML.replace("$WCM_JS_OOYALA$", "");
+				HTML = HTML.replace("$WCM_JS_YOUTUBE$", "");
+				HTML = HTML.replace("$WCM_JS_INSTAGRAM$", "");
+				HTML = HTML.replace("$WCM_JS_TWITTER$", "");
+				HTML = HTML.replace("$WCM_JS_FACEBOOK$", "");
+			}
+						
 		} catch (Exception e) {
 			LOG.error("Exception en generaAMP: ",e);
 			return HTML; 
 		}
 		return HTML;				
+	}
+	
+	
+	
+	/*
+	 * 
+	 * */
+	private String getRelacionadas(ContentDTO contentDTO, ParametrosDTO parametrosDTO)
+	{
+		LOG.debug("Inicia getRelacionadas");
+		try {				
+			
+			StringBuffer relacionadas=new StringBuffer();
+			
+			//Obtenemos la lista de las notas relacionadas 
+			List<ContentDTO> listRelacionadas= llamadasWSDAO.getNotasMagazine("magazine-home-2",contentDTO.getFcIdContenido(), parametrosDTO);
+			
+			//Recorremos la lista
+			if(listRelacionadas!=null && listRelacionadas.size()>0)
+			{					
+				int conBanner = 1;
+				for (ContentDTO relacionada : listRelacionadas) 
+				{
+					relacionadas.append("<a class=\""+relacionada.getFcIdCategoria()+" item\" href=\""+relacionada.getFcUrl()+"\">\n");
+					relacionadas.append("	<div class=\"thumb\">"+getHTMLTipoNota(relacionada.getFcIdTipoNota())+"\n");
+					relacionadas.append("	   <amp-img src=\""+relacionada.getFcImgPrincipal()+"\" layout=\"responsive\" width=\"750\" height=\"450\"></amp-img>\n");
+					relacionadas.append("	</div>\n");						
+					relacionadas.append("	<div class=\"item-content\"><h2>"+relacionada.getFcTitulo()+"</h2></div>\n");						
+					relacionadas.append("</a>\n");
+					switch (conBanner) {
+					case 2:
+						{
+							relacionadas.append("<div class=\"banner\">");		
+							relacionadas.append("<amp-ad width=\"300\" height=\"250\" layout=\"fixed\" type=\"doubleclick\" data-slot=\""+getUrlAdServer(contentDTO)+"MB01\"></amp-ad>");
+							relacionadas.append("</div>");								
+						}
+						break;
+					case 4:
+					{
+							relacionadas.append("<div class=\"banner\">");		
+							relacionadas.append("<amp-ad width=\"300\" height=\"250\" layout=\"fixed\" type=\"doubleclick\" data-slot=\""+getUrlAdServer(contentDTO)+"MB02\"></amp-ad>");
+							relacionadas.append("</div>");								
+					}
+						break;
+					case 6:
+					{
+							relacionadas.append("<div class=\"banner\">");		
+							relacionadas.append("<amp-ad width=\"300\" height=\"250\" layout=\"fixed\" type=\"doubleclick\" data-slot=\""+getUrlAdServer(contentDTO)+"MB06\"></amp-ad>");
+							relacionadas.append("</div>");								
+					}
+						break;
+					}
+					
+				conBanner++;	
+				}
+				
+				return "<h3>Te recomendamos</h3><div class=\"panel-related\">"+relacionadas.toString().trim()+"</div>";
+			}
+			else
+			{
+				return "";
+			}
+		} catch (Exception e) {
+			LOG.error("Error al sustituir relacionadas",e);
+			return "";
+		}
+		
 	}
 	
 	
@@ -282,9 +408,15 @@ public class AmpBO {
 	 * @param  ContentDTO Instancia con la información necesaria para reemplazar
 	 * @return String Se devuelve una cadena con el Media Content
 	 * */	
-	private static String getMediaContentAMP(ContentDTO dto)
+	private String getMediaContentAMP(ContentDTO dto)
 	{
-		String media="";		
+		
+		LOG.debug("AMP - Inicia getMediaContentAMP");
+		LOG.debug("AMP - getFcIdVideoOoyala: " +dto.getFcIdVideoOoyala().trim());
+		LOG.debug("AMP - getFcIdVideoYouTube: " +dto.getFcIdVideoYouTube().trim());
+		
+		String media="";
+		
 		if(!dto.getFcIdVideoOoyala().trim().equals("") || !dto.getFcIdVideoYouTube().trim().equals("")){
 			media=getVideoAMP(dto);
 		}
@@ -294,8 +426,13 @@ public class AmpBO {
 			mediaImage.append("<div class=\"panel-principal-media\">");
 			mediaImage.append("<amp-img width=\"750\" height=\"450\" layout=\"responsive\" src=\""+dto.getFcImgPrincipal()+"\"></amp-img>");
 			mediaImage.append(" </div>");
-			media = media.toString();
+			mediaImage.append("<div class=\"panel-image-meta\">");
+			mediaImage.append("<p><small><i class=\"far fa-camera\"></i></small>"+dto.getFcPieFoto()+"</p>");
+			mediaImage.append("</div>");			
+			media = mediaImage.toString();
 		}
+		
+		LOG.debug("media: "+media);
 		return media;
 	}
 	
@@ -359,7 +496,7 @@ public class AmpBO {
 	}
 	
 	/*
-	 * Se realiza a cabo la lógica para poner el código adecuado de las redes sociales
+	 * Se realiza a cabo la lógica para poner el codigo adecuado de las redes sociales
 	 * que va embebido en el Rich Text Format de la nota
 	 * @param  String RTFContenido de la nota
 	 * @return String Se regresa una cadena con el RTF adecuado para las redes sociales
@@ -612,6 +749,58 @@ public class AmpBO {
         
 		return texto;
 	}
+	
+	
+	private String getHTMLTipoNota(String tipoNota)
+	{
+		String html = "";		
+		if(tipoNota.equals("video"))
+			html = "<i class=\"far fa-play\"></i>";
+		else if(tipoNota.equals("galeria"))
+			html = "<i class=\"far fa-images\"></i>";
+		else if(tipoNota.equals("infografia"))
+			html = "<i class=\"far fa-images\"></i>";
+        else if(tipoNota.equals("image"))
+        	html = "<i class=\"far fa-play\"></i>";
+        else if(tipoNota.equals("imagen"))
+        	html = "";
+        else
+        	html = "";        	
+		return html;
+	}
+	
+	/*
+	 * 
+	 * */
+	private String getUrlAdServer(ContentDTO contentDTO)
+	{
+		
+		LOG.debug(""+contentDTO.getFcTipoSeccion());
+		LOG.debug(""+contentDTO.getFcSeccion());
+		LOG.debug(""+contentDTO.getFcIdCategoria());
+		
+		
+		String url_adserver = "";
+		try {						
+			if(contentDTO.getFcTipoSeccion().equals("noticias"))
+			{
+				if(contentDTO.getFcSeccion().equals("estados"))				
+					url_adserver ="/121173452/UnoTV/"+contentDTO.getFcTipoSeccion()+"/"+contentDTO.getFcSeccion()+"/";				
+				else
+					url_adserver ="/121173452/UnoTV/"+contentDTO.getFcTipoSeccion()+"/"+contentDTO.getFcIdCategoria()+"/";
+			}				
+			else if(contentDTO.getFcTipoSeccion().equals("videoblog"))
+				url_adserver ="/121173452/UnoTV/"+contentDTO.getFcTipoSeccion()+"s/"+contentDTO.getFcSeccion()+"/";
+			else
+				url_adserver ="/121173452/UnoTV/noticias/inicio/";
+			
+		} catch (Exception e) {
+			url_adserver ="/121173452/UnoTV/noticias/inicio/";
+			LOG.error("Exception: en getUrlAdServer",e);
+		}
+		return url_adserver; 
+	}
+	
 	
 	/*
 	 * Se escribe fisicamente un archivo de tipo HTML

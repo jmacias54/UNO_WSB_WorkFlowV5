@@ -58,7 +58,7 @@ private static final long serialVersionUID = 1L;
 	private String met_wsd_WorkFlow_deleteNotaTag;
 	private String met_wsd_WorkFlow_deleteNotaBD;
 	private String met_wsd_WorkFlow_deleteNotaHistoricoBD;
-	private String met_wsd_WorkFlow_getNotasMagazine;
+	
 	private String met_wsd_WorkFlow_getRelacionadasbyIdCategoria;		
 	private String met_wsd_WorkFlow_insertNotaBD;
 	private String met_wsd_WorkFlow_insertNotaHistoricoBD;
@@ -69,6 +69,12 @@ private static final long serialVersionUID = 1L;
 	private String correo_error_asunto;
 	private String correo_error_cuerpo;
 	private String correo_error_smtpsender;
+	
+	private String js_amp_ooyala_player;
+	private String js_amp_youtube;
+	private String js_amp_instagram;
+	private String js_amp_facebook;
+	private String js_amp_twitter;
 	
 	/**
 	 * @return the carpetaResources
@@ -445,13 +451,6 @@ private static final long serialVersionUID = 1L;
 			String met_wsd_WorkFlow_deleteNotaHistoricoBD) {
 		this.met_wsd_WorkFlow_deleteNotaHistoricoBD = met_wsd_WorkFlow_deleteNotaHistoricoBD;
 	}
-	public String getMet_wsd_WorkFlow_getNotasMagazine() {
-		return met_wsd_WorkFlow_getNotasMagazine;
-	}
-	public void setMet_wsd_WorkFlow_getNotasMagazine(
-			String met_wsd_WorkFlow_getNotasMagazine) {
-		this.met_wsd_WorkFlow_getNotasMagazine = met_wsd_WorkFlow_getNotasMagazine;
-	}
 	public String getMet_wsd_WorkFlow_getRelacionadasbyIdCategoria() {
 		return met_wsd_WorkFlow_getRelacionadasbyIdCategoria;
 	}
@@ -560,6 +559,36 @@ private static final long serialVersionUID = 1L;
 	}
 	public void setItemNotasRelacionadas(String itemNotasRelacionadas) {
 		this.itemNotasRelacionadas = itemNotasRelacionadas;
+	}
+	public String getJs_amp_ooyala_player() {
+		return js_amp_ooyala_player;
+	}
+	public void setJs_amp_ooyala_player(String js_amp_ooyala_player) {
+		this.js_amp_ooyala_player = js_amp_ooyala_player;
+	}
+	public String getJs_amp_youtube() {
+		return js_amp_youtube;
+	}
+	public void setJs_amp_youtube(String js_amp_youtube) {
+		this.js_amp_youtube = js_amp_youtube;
+	}
+	public String getJs_amp_instagram() {
+		return js_amp_instagram;
+	}
+	public void setJs_amp_instagram(String js_amp_instagram) {
+		this.js_amp_instagram = js_amp_instagram;
+	}
+	public String getJs_amp_facebook() {
+		return js_amp_facebook;
+	}
+	public void setJs_amp_facebook(String js_amp_facebook) {
+		this.js_amp_facebook = js_amp_facebook;
+	}
+	public String getJs_amp_twitter() {
+		return js_amp_twitter;
+	}
+	public void setJs_amp_twitter(String js_amp_twitter) {
+		this.js_amp_twitter = js_amp_twitter;
 	}
 	
 	

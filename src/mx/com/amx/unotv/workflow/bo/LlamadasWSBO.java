@@ -61,7 +61,7 @@ public class LlamadasWSBO {
 		LOG.debug("Inicia insertUpdateArticleFB en LlamadasWSBOTest");
 		try {
 			String URL_WS=parametrosDTO.getUrl_dominio_app()+parametrosDTO.getUrl_wsb_FB()+parametrosDTO.getMet_wsb_FB_insertUpdateArticle2();
-			LOG.debug("LLamado a "+URL_WS);
+			LOG.info("LLamado a "+URL_WS);
 			HttpEntity<ContentDTO> entity = new HttpEntity<ContentDTO>( contentDTO );
 			return restTemplate.postForObject(URL_WS, entity, String.class);
 		}catch(RestClientResponseException rre){
@@ -215,7 +215,7 @@ public class LlamadasWSBO {
 		LOG.debug("url : "+url);		
 		try {			
 			String URL_WS =parametrosDTO.getUrl_dominio_app()+"/MX_WSB_Utils_Akamai/rest/purgeController/purga_urls";
-			LOG.debug("URL_WS: "+URL_WS);									
+			LOG.info("URL_WS: "+URL_WS);									
 			HttpEntity<RequestArrayEntityPurgue> entity = new HttpEntity<RequestArrayEntityPurgue>( url );
 			return restTemplate.postForObject(URL_WS, entity, String.class);					
 		}catch(RestClientResponseException rre){

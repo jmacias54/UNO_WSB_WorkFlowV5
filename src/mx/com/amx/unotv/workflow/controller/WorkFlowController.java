@@ -17,6 +17,11 @@ public class WorkFlowController {
 	//LOG
 	private static Logger LOG=Logger.getLogger(WorkFlowController.class);
 	
+	public WorkFlowController() {
+		LOG.info("*** Iniciando Aplicación ****") ;
+	}
+	
+	
 	@Autowired
 	private ProcesoWorkflowBO procesoWorkflowBO;
 		

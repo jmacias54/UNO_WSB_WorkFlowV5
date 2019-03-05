@@ -3,6 +3,7 @@ package mx.com.amx.unotv.workflow.bo;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -15,12 +16,16 @@ import java.util.TimeZone;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import mx.com.amx.unotv.workflow.bo.exception.LlamadasWSDAOException;
 import mx.com.amx.unotv.workflow.bo.exception.ProcesoWorkflowException;
 import mx.com.amx.unotv.workflow.bo.exception.RemplazaHTMLBOException;
 import mx.com.amx.unotv.workflow.dto.ContentDTO;
+import mx.com.amx.unotv.workflow.dto.InfoNotaDTO;
 import mx.com.amx.unotv.workflow.dto.Nota;
 import mx.com.amx.unotv.workflow.dto.ParametrosDTO;
 import mx.com.amx.unotv.workflow.dto.RedSocialEmbedPostDTO;
@@ -30,6 +35,8 @@ public class RemplazaHTMLBO {
 	
 	//LOG
 	private static Logger LOG = Logger.getLogger(RemplazaHTMLBO.class);	
+	@Autowired
+	private LlamadasWSDAO llamadasWSDAO;
 	
 	/**
 	 * 
@@ -40,11 +47,16 @@ public class RemplazaHTMLBO {
 		LOG.debug("Inicio creaHTML");
 		try {			
 			
-			Document doc = Jsoup.connect(parametrosDTO.getBasePaginaPlantilla()).timeout(120000).get();			 
+			//obtenemos plantilla prerender.
+			String plantilla = getPlantilla(contentDTO.getFcIdCategoria(), parametrosDTO);
 			
-			LOG.debug(parametrosDTO.getBasePaginaPlantilla());
+			//Conexion platilla.
+			Document doc = Jsoup.connect(plantilla).timeout(120000).get();			 
+			
+			LOG.debug(plantilla);
 			String HTML = doc.html();			
-									
+				
+			//
 			HTML = remplazaPantilla(HTML, contentDTO, parametrosDTO);			
 			//Remplazamos thema o otras cosas
 			HTML = HTML.replace(parametrosDTO.getBaseTheme(),"/"+parametrosDTO.getCarpetaResources()+"/");			
@@ -65,8 +77,16 @@ public class RemplazaHTMLBO {
 	public void creaHTMLTest(ParametrosDTO parametrosDTO, ContentDTO contentDTO)
 	{
 		LOG.debug("Inicio creaHTML");
-		try {						
-			Document doc = Jsoup.connect(parametrosDTO.getBasePaginaPlantilla()).timeout(120000).get();			 
+		try {		
+			
+			//obtenemos plantilla prerender.
+			String plantilla = getPlantilla(contentDTO.getFcIdCategoria(), parametrosDTO);
+						
+			//Conexion platilla.
+			Document doc = Jsoup.connect(plantilla).timeout(120000).get();
+			//
+			LOG.debug(plantilla);
+
 			String HTML = doc.html();	
 			
 			//
@@ -90,8 +110,6 @@ public class RemplazaHTMLBO {
 	 * */
 	private String remplazaPantilla(String HTML, ContentDTO contentDTO, ParametrosDTO parametrosDTO)
 	{
-		
-		
 		
 		LOG.debug("Inicia remplazaPantilla");
 		
@@ -138,7 +156,7 @@ public class RemplazaHTMLBO {
 		//$WCM_FECHA$
 		try {
 			SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
-			HTML = HTML.replace("$WCM_FECHA$", format.format(contentDTO.getFdFechaPublicacion()));
+			HTML = HTML.replace("$WCM_FECHA$", format.format(contentDTO.getFdFechaPublicacion()));			
 		} catch (Exception e) {
 			HTML = HTML.replace("$WCM_FECHA$", "");
 			LOG.error("Error al remplazar $WCM_FECHA$");
@@ -195,7 +213,7 @@ public class RemplazaHTMLBO {
 			HTML = HTML.replace("$WCM_MEDIA_CONTENT$", "");
 			LOG.error("Error al remplazar $WCM_MEDIA_CONTENT$");
 		}
-						
+					
 		//$WCM_RTF_CONTENIDO$
 		try {
 			HTML = HTML.replace("$WCM_RTF_CONTENIDO$", UtilsHTML.cambiaCaracteres(getEmbedPost(contentDTO.getClRtfContenido())));
@@ -207,6 +225,12 @@ public class RemplazaHTMLBO {
 		//Remplazamos la galeria
 		try {
 			HTML = HTML.replace("[=GALERIA=]",UtilsHTML.cambiaCaracteres(contentDTO.getClGaleriaImagenes()));
+			
+			//Repleza galeria por separado.
+			if(!contentDTO.getClGaleriaImagenes().equals(""))
+			{
+				HTML = remplazaGaleriaItem(contentDTO.getJsonGaleria(), HTML);
+			}			
 		} catch (Exception e) {
 			HTML = HTML.replace("[=GALERIA=]", "");
 			LOG.error("Error al remplazar galeria",e);
@@ -235,9 +259,8 @@ public class RemplazaHTMLBO {
 		HTML = HTML.replace("$CLASS_BODY$", contentDTO.getFcIdCategoria().trim());
 				
 		try {
-			// Remplaza notas relacionadas  (Se quitaron las notas relacionadas por taboola)
-			//List<Nota> listaRelacionadas = llamadasWSDAO._obtieneRelacionadas(contentDTO.getFcNombre(), contentDTO.getFcIdCategoria(), parametrosDTO).getLista();		
-			//HTML = HTML.replace("$TE_RECOMENDAMOS$", remplazaRecomendados(listaRelacionadas , parametrosDTO));
+			//Remplaza notas relacionadas  (Se quitaron las notas relacionadas por taboola)			
+			HTML = notasRelacionadas(HTML, contentDTO, parametrosDTO);
 		} catch (Exception e) {
 			LOG.error("Error al remplazar notas relacionadas",e);
 			HTML = HTML.replace("$TE_RECOMENDAMOS$", "");
@@ -249,8 +272,7 @@ public class RemplazaHTMLBO {
 		} catch (Exception e) {
 			LOG.error("Error al remplazar class y adserver",e);
 		}
-		
-		
+				
 		//numberUnoCross Ad-server
 		try {			
 			String[] pala=  contentDTO.getFcNombre().split("-");
@@ -263,6 +285,27 @@ public class RemplazaHTMLBO {
 			HTML = HTML.replace("numberUnoCross", "");
 			LOG.error("Error al remplazar numberUnoCross");			
 		}
+		
+		//Remplaza BBC
+		try {
+			for (String string : contentDTO.getFcTagsApp()) {			
+				if(string.equals("notas-bbc"))
+				{					
+					HTML = HTML.replace("$BBC_ID_CONTENIDO$" , contentDTO.getFcIdContenido());
+					HTML = HTML.replace("$BBC_TITULO$" , URLEncoder.encode(contentDTO.getFcTitulo(),"UTF-8"));
+					HTML = HTML.replace("$BBC_TIME_STAMP$", String.valueOf(contentDTO.getFdFechaPublicacion().getTime()));					
+					String bbc_url = parametrosDTO.getDominio()+"/"+ getRutaContenido(contentDTO)+"/";
+					LOG.debug("bbc_url: "+bbc_url);					
+					bbc_url = URLEncoder.encode(bbc_url, "UTF-8");
+					LOG.debug("bbc_url: "+bbc_url);					
+					HTML = HTML.replace("$BBC_URL$",bbc_url);			
+				}					
+			}		
+			HTML = HTML.replace("<img src=\"//ssc.api.bbc.com/?ns_site=bbc&amp;c1=2&amp;c2=19999701&amp;b_code_ver=non-js&amp;b_site_channel=partners&amp;b_vs_un=ws&amp;ns_c=UTF-8&amp;ns_alias=$BBC_ID_CONTENIDO$&amp;name=$BBC_TITULO$&amp;ns__t=$BBC_TIME_STAMP$&amp;c7=$BBC_URL$\" height=\"1\" width=\"1\" border=\"0\" alt=\"\" />" ,"");			
+		} catch(Exception e) {			
+			LOG.error("Error al remplazar BBC");
+		}
+		
 		
 		//Remplaza etiquetas Ad-server
 		try {
@@ -286,10 +329,15 @@ public class RemplazaHTMLBO {
 		} catch (Exception e) {
 			HTML = HTML.replace("$ETIQUETAS_DATALAYER$", "");
 			LOG.error("Error al remplazar $ETIQUETAS_DATALAYER$");
-		}		
+		}
+			
 		
 		//Remplaza metas
 		HTML = remplazaMetas(HTML, contentDTO, parametrosDTO);
+		
+		//Data Layer		
+		HTML = remplazaDataLayer(HTML, contentDTO, parametrosDTO);
+				
 		
 		//Base URL
 		try 
@@ -484,9 +532,12 @@ public class RemplazaHTMLBO {
 	private static String getMediaContent(ContentDTO dto, ParametrosDTO parametrosDTO)
 	{		
 		String media="";
-		if(!dto.getFcIdVideoOoyala().trim().equals("") || !dto.getFcIdVideoYouTube().trim().equals("") || !dto.getFcIdPlayerOoyala().trim().equals("")){
-			media=getVideo(dto);
-		}else{
+		if(!dto.getFcIdVideoOoyala().trim().equals("") || !dto.getFcIdVideoYouTube().trim().equals("") || !dto.getFcIdPlayerOoyala().trim().equals(""))
+		{
+			media=getVideo(dto);			
+		}
+		else
+		{
 			media=getImagen(dto);
 		}
 		return media;
@@ -757,23 +808,51 @@ public class RemplazaHTMLBO {
 		}
 		else if(!IdVideoOoyala.trim().equals("") && !IdPlayerVideoOoyala.trim().equals(""))
 		{			
+//			//VERSION 4
+//			mediaContent.append(" <!-- Ooyala V4--> \n");
+//			mediaContent.append("<div class=\"panel-principal-media\"> \n");
+//			mediaContent.append(" <div id=\"ooyalaplayer\"></div> \n");
+//			mediaContent.append(" <link rel=\"stylesheet\" href=\"//player.ooyala.com/static/v4/stable/4.13.5/skin-plugin/html5-skin.min.css\"> \n");
+//			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/core.min.js\"></script> \n");
+//			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/video-plugin/bit_wrapper.min.js\"></script> \n");
+//			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/video-plugin/main_html5.min.js\"></script> \n");
+//			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/skin-plugin/html5-skin.min.js\"></script> \n");
+//			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/ad-plugin/google_ima.min.js\"></script> \n");
+//			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/analytics-plugin/googleAnalytics.min.js\"></script> \n");
+//			mediaContent.append(" <script> \n");
+//			mediaContent.append("   var playerParam = { \n");
+//			mediaContent.append("     'pcode': '"+dto.getFcPCode()+"', \n");
+//			mediaContent.append("     'playerBrandingId': \""+IdPlayerVideoOoyala+"\", \n");
+//			mediaContent.append("     'skin': { \n");
+//			mediaContent.append("       'config': '/ooyala/4.13.5/skin.json' \n");
+//			mediaContent.append("     } \n");
+//			mediaContent.append("   }; \n");
+//			mediaContent.append("   OO.ready(function() { \n");
+//			mediaContent.append("     window.pp = OO.Player.create('ooyalaplayer', \""+IdVideoOoyala+"\", playerParam); \n");
+//			mediaContent.append("   }); \n");
+//			mediaContent.append(" </script> \n");
+//			mediaContent.append(" </div> ");
+//						
 			//VERSION 4
 			mediaContent.append(" <!-- Ooyala V4--> \n");
 			mediaContent.append("<div class=\"panel-principal-media\"> \n");
 			mediaContent.append(" <div id=\"ooyalaplayer\"></div> \n");
-			mediaContent.append(" <link rel=\"stylesheet\" href=\"//player.ooyala.com/static/v4/stable/4.13.5/skin-plugin/html5-skin.min.css\"> \n");
-			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/core.min.js\"></script> \n");
-			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/video-plugin/bit_wrapper.min.js\"></script> \n");
-			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/video-plugin/main_html5.min.js\"></script> \n");
-			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/skin-plugin/html5-skin.min.js\"></script> \n");
-			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/ad-plugin/google_ima.min.js\"></script> \n");
-			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/stable/4.13.5/analytics-plugin/googleAnalytics.min.js\"></script> \n");
+			mediaContent.append(" <link rel=\"stylesheet\" href=\"//player.ooyala.com/static/v4/production/skin-plugin/html5-skin.min.css\"> \n");
+			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/production/core.min.js\"></script> \n");
+			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/production/video-plugin/bit_wrapper.min.js\"></script> \n");
+			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/production/video-plugin/main_html5.min.js\"></script> \n");
+			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/production/skin-plugin/html5-skin.min.js\"></script> \n");
+			mediaContent.append(" <script src=\"//player.ooyala.com/static/v4/production/ad-plugin/google_ima.min.js\"></script> \n");
 			mediaContent.append(" <script> \n");
 			mediaContent.append("   var playerParam = { \n");
 			mediaContent.append("     'pcode': '"+dto.getFcPCode()+"', \n");
 			mediaContent.append("     'playerBrandingId': \""+IdPlayerVideoOoyala+"\", \n");
 			mediaContent.append("     'skin': { \n");
-			mediaContent.append("       'config': '/ooyala/4.13.5/skin.json' \n");
+			mediaContent.append("       'inline': { \n");
+			mediaContent.append("            'localization': { \n");
+			mediaContent.append("                'defaultLanguage': \"es\" \n");
+			mediaContent.append("                             } \n");			
+			mediaContent.append("                  } \n");			
 			mediaContent.append("     } \n");
 			mediaContent.append("   }; \n");
 			mediaContent.append("   OO.ready(function() { \n");
@@ -851,7 +930,7 @@ public class RemplazaHTMLBO {
 					item = item.replace("$ID_CATEGORIA$", nota.getIdCategoria());
 					item = item.replace("$URL_NOTA$", nota.getFriendlyUrl());
 					item = item.replace("$URL_IMAGEN$", nota.getImagenPrincipal());
-					item = item.replace("$DESCRIPCION_CATEGORIA$", UtilsHTML.htmlEncode(nota.getCategoriaDescripcion()));
+					item = item.replace("$DESCRIPCION_CATEGORIA$", nota.getIdCategoria());
 					item = item.replace("$FECHA$", nota.getFechaPublicacion());
 					item = item.replace("$TITULO$", UtilsHTML.htmlEncode(nota.getTitulo()));					
 					item = item.replace("$TIPO_NOTA$", getHTMLTipoNota(nota.getTipoNota()));
@@ -886,6 +965,288 @@ public class RemplazaHTMLBO {
         	html = "";        	
 		return html;
 	}
+	
+	/*
+	 * 
+	 * */
+	private String remplazaDataLayer(String HTML, ContentDTO contentDTO, ParametrosDTO parametrosDTO)
+	{
+		LOG.debug("Inicia remplazaDataLayer");
+		
+		//$DATALAYER_CONTENT_ID$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_CONTENT_ID$", contentDTO.getFcIdContenido());
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_CONTENT_ID$", "");			
+			LOG.error("Error al remplazar $DATALAYER_CONTENT_ID$");
+		}
+			
+		//$DATALAYER_FRIENDLY_URL$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_FRIENDLY_URL$", contentDTO.getFcNombre());
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_FRIENDLY_URL$", "");			
+			LOG.error("Error al remplazar $DATALAYER_FRIENDLY_URL$");
+		}
+		
+		
+		//$DATALAYER_TITULO$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_TITULO$", UtilsHTML.removeCaracteres(contentDTO.getFcTitulo().toLowerCase()));
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_TITULO$", "");			
+			LOG.error("Error al remplazar $DATALAYER_TITULO$");
+		}
+		
+		
+		//$DATALAYER_URL_PAGE$ 
+		try {			
+			String url=getRutaContenido(contentDTO);
+			HTML = HTML.replace("$DATALAYER_URL_PAGE$", parametrosDTO.getDominio()+"/"+url+"/");			
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_URL_PAGE$", "");			
+			LOG.error("Error al remplazar $DATALAYER_URL_PAGE$");
+		}
+		
+		//$DATALAYER_AUTOR$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_AUTOR$", UtilsHTML.removeCaracteres(contentDTO.getFcEscribio().toLowerCase()));
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_AUTOR$", "");			
+			LOG.error("Error al remplazar $DATALAYER_AUTOR$");
+		}
+		
+		//$DATALAYER_FUENTE$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_FUENTE$", UtilsHTML.removeCaracteres(contentDTO.getFcFuente().toLowerCase()));
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_FUENTE$", "");			
+			LOG.error("Error al remplazar $DATALAYER_FUENTE$");
+		}
+
+		//$DATALAYER_TIPO_SECCION$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_TIPO_SECCION$", contentDTO.getFcTipoSeccion());
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_TIPO_SECCION$", "");			
+			LOG.error("Error al remplazar $DATALAYER_TIPO_SECCION$");
+		}
+		
+		//$DATALAYER_SECCION$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_SECCION$", contentDTO.getFcSeccion());
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_SECCION$", "");			
+			LOG.error("Error al remplazar $DATALAYER_SECCION$");
+		}
+		
+		//$DATALAYER_CATEGORIA$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_CATEGORIA$", contentDTO.getFcIdCategoria());
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_CATEGORIA$", "");			
+			LOG.error("Error al remplazar $DATALAYER_CATEGORIA$");
+		}
+		
+		//$DATALAYER_TIPO$ 
+		try {
+			HTML = HTML.replace("$DATALAYER_TIPO$", contentDTO.getFcIdTipoNota());
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_TIPO$", "");			
+			LOG.error("Error al remplazar $DATALAYER_TIPO$");
+		}
+		
+		//DATALAYER_FECHA 
+		try {
+			SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+			HTML = HTML.replace("$WCM_FECHA$", format.format(contentDTO.getFdFechaPublicacion()));				
+			SimpleDateFormat formatDataLayer = new SimpleDateFormat("yyyy-MM-dd");
+			HTML = HTML.replace("$DATALAYER_FECHA_PUB$", formatDataLayer.format(contentDTO.getFdFechaPublicacion()));
+			HTML = HTML.replace("$DATALAYER_FECHA_MOD$", formatDataLayer.format(new Date()));
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_FECHA_PUB$", "");
+			HTML = HTML.replace("$DATALAYER_FECHA_MOD$", "");
+			LOG.error("Error al remplazar $WCM_FECHA$");
+		}
+				
+		//Remplaza data-layer video
+		try {			
+			if(!contentDTO.getFcIdVideoOoyala().trim().equals(""))
+			{
+				HTML = HTML.replace("$DATALAYER_VIDEO$" , getDataLayerVideo(contentDTO));			
+			}
+			else
+			{
+				HTML = HTML.replace("$DATALAYER_VIDEO$" , "");
+			}				
+		} catch (Exception e) {
+			HTML = HTML.replace("$DATALAYER_VIDEO$" , "");
+			LOG.error("Error al remplazar $DATALAYER_VIDEO$");
+		}		
+
+		
+		return HTML;
+	}
+	
+	/**
+	 * 
+	 * */
+	private String getDataLayerVideo(ContentDTO contentDTO)
+	{
+		try {		
+			StringBuffer sb = new StringBuffer();			
+			sb.append(" window.digitalData.component.push({  \n");
+			sb.append("     componentInfo:{ \n");
+			sb.append("     componentID: '"+contentDTO.getFcIdVideoOoyala()+"', \n");
+			sb.append("     componentName: '"+UtilsHTML.removeCaracteres(contentDTO.getFcAlternateTextVideo().toLowerCase())+"', \n");
+			sb.append("     description: '"+UtilsHTML.removeCaracteres(contentDTO.getFcAlternateTextVideo().toLowerCase())+"' \n");
+			sb.append("   }, \n");
+			sb.append("   category:{ \n");
+			sb.append("     primaryCategory: '"+contentDTO.getFcSeccion()+"', \n");
+			sb.append("     subCategory1: '"+contentDTO.getFcIdCategoria()+"', \n");
+			sb.append("     componentType: 'video', \n");
+			sb.append("     componentSubType: 'vod' \n");
+			sb.append("   }, \n");
+			sb.append("   attributes:{ \n");
+			sb.append("   production: 'Uno TV', \n");
+			sb.append("   player: 'ooyala', \n");
+			sb.append("   length: "+contentDTO.getFcDurationVideo()+", \n");
+			sb.append("   offset: 0 \n");
+			sb.append(" } \n");
+			sb.append(" }); \n");			
+			return sb.toString();
+		} catch (Exception e) {
+			return "";
+		}		
+	}
+	
+	
+	/*
+	 * 
+	 * */
+	private String remplazaGaleriaItem(String strJsonGaeria, String HTML)
+	{
+		LOG.debug("strJsonGaeria: "+strJsonGaeria);
+		try {
+			
+			JSONObject jsonGaleria = new JSONObject(strJsonGaeria);		
+			LOG.debug("Total Img: "+jsonGaleria.getString("contadorArchivos0"));
+			int totalImg = Integer.valueOf(jsonGaleria.getString("contadorArchivos0"));			
+			LOG.debug("Total de imagesn: "+totalImg);
+			
+			//LOG
+			for (int i = 0; i <= totalImg; i++) {				
+				String itemGallery = "<div class=\"gallery\"><div class=\"item-gallery\"><img alt=\"$GALLERY_DESCRIPCION_IMG$\" src=\"$GALLERY_URL_IMG$\"><p>$GALLERY_DESCRIPCION_IMG$<u>$GALLERY_PIE_IMG$</u></p></div></div>";				
+				itemGallery = itemGallery.replace("$GALLERY_URL_IMG$",jsonGaleria.getString("name[0]["+i+"]"));
+				itemGallery = itemGallery.replace("$GALLERY_DESCRIPCION_IMG$",jsonGaleria.getString("descripcion[0]["+i+"]"));
+				itemGallery = itemGallery.replace("$GALLERY_PIE_IMG$",jsonGaleria.getString("pie[0]["+i+"]"));				
+				LOG.debug("[=foto"+i+"=]");
+				LOG.debug("name:        "+jsonGaleria.getString("name[0]["+i+"]"));
+				LOG.debug("descripcion: "+jsonGaleria.getString("descripcion[0]["+i+"]"));
+				LOG.debug("pie:         "+jsonGaleria.getString("pie[0]["+i+"]"));				
+				HTML = HTML.replace("[=foto"+i+"=]", itemGallery);				
+			}
+					
+		} catch (Exception e) {
+			LOG.error("Exception en remplazaGaleriaItem: ",e);
+		}		
+		return HTML;
+		
+	}
+
+	/*
+	 * 
+	 * */
+	private String notasRelacionadas(String HTML , ContentDTO contentDTO, ParametrosDTO parametrosDTO) throws Exception
+	{		
+		LOG.debug("Inicia notasRelacionadas");
+		try {			
+			
+			List<Nota> listaNota = new ArrayList<Nota>();
+			
+			LOG.debug("REL: "+contentDTO.getJsonRelacionadas());			
+			JSONObject jsonRelacionadas = new JSONObject(contentDTO.getJsonRelacionadas());
+			LOG.debug("REL: Total de notas: "+(jsonRelacionadas.length()-4));
+			
+			
+			for (int i = 0; i <= jsonRelacionadas.length(); i++) {				
+				LOG.debug("I = "+i);
+				
+				if(i>4)
+				{
+					String keyJson = "rel_descripcion"+"[0]["+(i-5)+"]";					
+					
+					try {
+						LOG.debug("REL: jsonArray: "+jsonRelacionadas.getString(keyJson));
+					} catch (Exception e) {
+						LOG.error("Exception Elemento no encontrado: "+keyJson);
+						keyJson = "rel_descripcion"+"[1]["+(i-5)+"]";
+					}
+					
+					String[] arrayURL = jsonRelacionadas.getString(keyJson).split("/");					
+					String frandyurl = arrayURL[arrayURL.length -1];   
+					LOG.debug("frandyurl: "+frandyurl);					
+					
+					try {										
+						InfoNotaDTO infoNotaDTO = llamadasWSDAO._getInfoNota(frandyurl, parametrosDTO);						
+						Nota nota = new Nota();
+						nota.setNombre(frandyurl);
+						nota.setIdCategoria(infoNotaDTO.getFcIdCategoria());
+						nota.setTipoNota(infoNotaDTO.getFcIdTipoNota());	
+						nota.setFechaPublicacion("");
+						nota.setImagenPrincipal(infoNotaDTO.getFcImgPrincipal());
+						nota.setTitulo(infoNotaDTO.getFcTitulo());
+						nota.setFriendlyUrl(jsonRelacionadas.getString(keyJson));
+						nota.setIdContenido(infoNotaDTO.getFcIdContenido());
+						listaNota.add(nota);						
+					} catch (LlamadasWSDAOException e) {
+						LOG.error("LlamadasWSBOException en notasRelacionadas: "+e.getMessage());						
+					}
+					
+				}			
+			}			
+			LOG.debug("listInfoNotaDTO.size: "+listaNota.size());			
+			HTML = HTML.replace("$TE_RECOMENDAMOS$", remplazaRecomendados(listaNota , parametrosDTO));
+
+			
+		} catch (Exception e) {
+			LOG.error("Exception en notasRelacionadas: ",e );
+			HTML = HTML.replace("$TE_RECOMENDAMOS$", "");
+		}
+		
+		return HTML;
+		
+	}
+	
+	
+	/**
+	 * 
+	 * */
+	private String getPlantilla(String idCategoria, ParametrosDTO parametrosDTO) throws Exception
+	{		
+		LOG.debug("** Inicia getPlantilla **");
+		LOG.debug("idCategoria: "+idCategoria);
+		try {
+			
+			String plantilla = parametrosDTO.getBasePaginaPlantilla(); 			
+			if(idCategoria.equals("entretenimiento"))
+			{
+				plantilla = plantilla+"detalle-prerender-entretenimiento";
+			}
+			else
+			{
+				plantilla = plantilla+"detalle-prerender";
+			}			
+			return plantilla;
+		} catch (Exception e) {
+			LOG.error("Exception en getPlantilla: ",e);
+			return "http://AMXDEVPOS02-2.tmx-internacional.net:10059/wps/portal/unotv/unotv-v5/inicio/detalle-prerender";
+		}
+		
+	}
+	
+	
+	
 	
 	
 }

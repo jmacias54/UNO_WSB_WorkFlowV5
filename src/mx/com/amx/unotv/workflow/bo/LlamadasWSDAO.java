@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import mx.com.amx.unotv.workflow.bo.exception.LlamadasWSDAOException;
 import mx.com.amx.unotv.workflow.dto.ContentDTO;
 import mx.com.amx.unotv.workflow.dto.ExtraInfoContentDTO;
+import mx.com.amx.unotv.workflow.dto.InfoNotaDTO;
 import mx.com.amx.unotv.workflow.dto.NotaListResponse;
 import mx.com.amx.unotv.workflow.dto.ParametrosDTO;
 import mx.com.amx.unotv.workflow.dto.PodcastDTO;
@@ -513,6 +514,29 @@ public class LlamadasWSDAO {
 			throw new LlamadasWSDAOException(e.getMessage());
 		}
 		
+	}
+	
+	
+	/**
+	 * 
+	 * */
+	public InfoNotaDTO _getInfoNota(String friendlyURL, ParametrosDTO parametrosDTO) throws LlamadasWSDAOException 
+	{
+		LOG.debug("Inicia _getInfoNota [WS DAO]");
+		LOG.debug("friendlyURL : "+friendlyURL);		
+		try {
+			String URL_WS =parametrosDTO.getUrl_dominio_dat()+"/MX_UNO_WSD_WorkFlow/rest/workflow-controller/getInfoNota";
+			LOG.debug("URL_WS: "+URL_WS);			
+			HttpEntity<String> entity = new HttpEntity<String>(friendlyURL);
+			return restTemplate.postForObject(URL_WS, entity, InfoNotaDTO.class);
+		}catch(RestClientResponseException rre){
+			LOG.error("RestClientResponseException _getInfoNota [WS DAO]: " + rre.getResponseBodyAsString());
+			LOG.error("RestClientResponseException _getInfoNota [WS DAO]: ", rre);
+			throw new LlamadasWSDAOException(rre.getResponseBodyAsString());	
+		} catch(Exception e) {
+			LOG.error("Error _getInfoNota[WS DAO]:",e);
+			throw new LlamadasWSDAOException(e.getMessage());
+		}			
 	}
 	
 	

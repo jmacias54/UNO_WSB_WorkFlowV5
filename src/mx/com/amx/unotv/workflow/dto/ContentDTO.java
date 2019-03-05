@@ -23,6 +23,7 @@ public class ContentDTO {
 	private String fcIdVideoOoyala;
 	private String fcIdPlayerOoyala;
 	private String fcIdAudioOoyala;
+	private String jsonGaleria;
 	private String clGaleriaImagenes;
 	private String fcImgInfografia;
 	private String clRtfContenido;
@@ -58,6 +59,8 @@ public class ContentDTO {
 	private String fcDurationVideo;
 	private String fcFileSizeVideo;
 	private String fcFBArticleId;
+	
+	private String jsonRelacionadas;
 	
 	private String portal_cn;
 	private String portal_uid;
@@ -614,6 +617,19 @@ public class ContentDTO {
 	}
 	public void setFcIdAudioOoyala(String fcIdAudioOoyala) {
 		this.fcIdAudioOoyala = fcIdAudioOoyala;
+	}	
+	public String getJsonGaleria() {
+		return jsonGaleria;
+	}
+	public void setJsonGaleria(String jsonGaleria) {
+		this.jsonGaleria = jsonGaleria;
+	}
+
+	public String getJsonRelacionadas() {
+		return jsonRelacionadas;
+	}
+	public void setJsonRelacionadas(String jsonRelacionadas) {
+		this.jsonRelacionadas = jsonRelacionadas;
 	}
 	public String toString() {
 		
@@ -631,6 +647,7 @@ public class ContentDTO {
 		result.append(" fcFuente: _" + this.getFcFuente() + "_" + NEW_LINE);
 		result.append(" fcIdTipoNota: _" + this.getFcIdTipoNota() + "_" + NEW_LINE);
 		result.append(" fcImgPrincipal: _" + this.getFcImgPrincipal() + "_" + NEW_LINE);
+		result.append(" jsonGaleria: _" + this.getJsonGaleria() + "_" + NEW_LINE);
 		result.append(" fcPieFoto: _" + this.getFcPieFoto() + "_" + NEW_LINE);
 		result.append(" fcIdVideoYouTube: _" + this.getFcIdVideoYouTube() + "_" + NEW_LINE);
 		result.append(" fcIdVideoOoyala: _" + this.getFcIdVideoOoyala() + "_" + NEW_LINE);
@@ -661,12 +678,12 @@ public class ContentDTO {
 		result.append(" fcPaisRegistro: _" + this.getFcPaisRegistro() + "_" + NEW_LINE);
 		result.append(" placeGallery: _" + this.getPlaceGallery() + "_" + NEW_LINE);
 		result.append(" fcPCode: _" + this.getFcPCode() + "_" + NEW_LINE);
+		result.append(" jsonRelacionadas: _" + this.getJsonRelacionadas() + "_" + NEW_LINE);
 		result.append(" portal_cn: _" + this.getPortal_cn() + "_" + NEW_LINE);
 		result.append(" portal_uid: _" + this.getPortal_uid() + "_" + NEW_LINE);		
 		result.append(" [End of Class] " + NEW_LINE);
 		result.append("}");
 		NEW_LINE = null;
-
 		return result.toString();
 	}	
 	

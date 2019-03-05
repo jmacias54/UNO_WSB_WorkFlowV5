@@ -11,11 +11,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import javax.crypto.CipherInputStream;
-
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import mx.com.amx.unotv.workflow.bo.exception.AmpBOException;
@@ -190,7 +189,7 @@ public class AmpBO {
 			}
 			
 			try {				
-				HTML = HTML.replace("$WCM_IMAGEN$",contentDTO.getFcImgPrincipal());
+				HTML = HTML.replace("$WCM_IMAGEN$",parametrosDTO.getDominio()+contentDTO.getFcImgPrincipal());
 			} catch (Exception e) {
 				HTML = HTML.replace("$WCM_IMAGEN$", "");
 				LOG.error("Error al remplazar $WCM_IMAGEN$");
@@ -236,6 +235,13 @@ public class AmpBO {
 			//Remplazamos la galeria
 			try {
 				HTML = HTML.replace("[=GALERIA=]",getGaleriaAMP(contentDTO));
+				
+				//Repleza galeria por separado.
+				if(!contentDTO.getClGaleriaImagenes().equals(""))
+				{
+					HTML = remplazaGaleriaItem(contentDTO.getJsonGaleria(), HTML);
+				}
+				
 			} catch (Exception e) {
 				HTML = HTML.replace("[=GALERIA=]", "");
 				LOG.error("Error al remplazar galeria",e);
@@ -773,13 +779,7 @@ public class AmpBO {
 	 * 
 	 * */
 	private String getUrlAdServer(ContentDTO contentDTO)
-	{
-		
-		LOG.debug(""+contentDTO.getFcTipoSeccion());
-		LOG.debug(""+contentDTO.getFcSeccion());
-		LOG.debug(""+contentDTO.getFcIdCategoria());
-		
-		
+	{			
 		String url_adserver = "";
 		try {						
 			if(contentDTO.getFcTipoSeccion().equals("noticias"))
@@ -836,6 +836,41 @@ public class AmpBO {
 			LOG.error("Fallo al crear la plantilla: ", e);
 		}		
 		return success;
+	}
+	
+	
+	
+	/*
+	 * 
+	 * */
+	private String remplazaGaleriaItem(String strJsonGaeria, String HTML)
+	{
+		LOG.debug("strJsonGaeria: "+strJsonGaeria);
+		try {
+			
+			JSONObject jsonGaleria = new JSONObject(strJsonGaeria);		
+			LOG.debug("Total Img: "+jsonGaleria.getString("contadorArchivos0"));
+			int totalImg = Integer.valueOf(jsonGaleria.getString("contadorArchivos0"));			
+			LOG.debug("Total de imagesn: "+totalImg);
+			
+			//LOG
+			for (int i = 0; i <= totalImg; i++) {				
+				String itemGallery = "<div class=\"gallery\"><div class=\"item-gallery\"><amp-img width=\"545\" height=\"360\" layout= \"responsive\" src=\"$GALLERY_URL_IMG$\"></amp-img><p>$GALLERY_DESCRIPCION_IMG$<u>$GALLERY_PIE_IMG$</u></p></div></div>";				
+				itemGallery = itemGallery.replace("$GALLERY_URL_IMG$",jsonGaleria.getString("name[0]["+i+"]"));
+				itemGallery = itemGallery.replace("$GALLERY_DESCRIPCION_IMG$",jsonGaleria.getString("descripcion[0]["+i+"]"));
+				itemGallery = itemGallery.replace("$GALLERY_PIE_IMG$",jsonGaleria.getString("pie[0]["+i+"]"));				
+				LOG.debug("[=foto"+i+"=]");
+				LOG.debug("name:        "+jsonGaleria.getString("name[0]["+i+"]"));
+				LOG.debug("descripcion: "+jsonGaleria.getString("descripcion[0]["+i+"]"));
+				LOG.debug("pie:         "+jsonGaleria.getString("pie[0]["+i+"]"));				
+				HTML = HTML.replace("[=foto"+i+"=]", itemGallery);				
+			}
+					
+		} catch (Exception e) {
+			LOG.error("Exception en remplazaGaleriaItem: ",e);
+		}		
+		return HTML;
+		
 	}
 }//FIN CLASS
 

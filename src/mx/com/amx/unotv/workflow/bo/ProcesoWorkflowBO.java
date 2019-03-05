@@ -41,7 +41,7 @@ public class ProcesoWorkflowBO {
 	@Autowired
 	private JsonBO jsonBO;
 	@Autowired
-	private CorreoBO correoBO;
+	private CorreoBO correoBO;	
 	@Autowired 
 	private RemplazaHTMLBO remplazaHTMLBO;
 	@Autowired
@@ -178,7 +178,7 @@ public class ProcesoWorkflowBO {
 				//Enviamos push de AMP
 				if(!html_amp.equals("")){ 
 					LOG.info("Enviamos PUSH al AMP");
-					PushAmpDTO pushAMP=new PushAmpDTO();
+					PushAmpDTO pushAMP = new PushAmpDTO();
 					pushAMP.setFcIdCategoria(contentDTO.getFcIdCategoria());
 					pushAMP.setFcIdContenido(contentDTO.getFcIdContenido());
 					pushAMP.setFcNombre(contentDTO.getFcNombre());
@@ -197,8 +197,11 @@ public class ProcesoWorkflowBO {
 			
 			
 			//Enviamos Push de Instant Article
-			try {			
-				id_facebook = llamadasWSBO.insertUpdateArticleFB(contentDTO, parametrosDTO);
+			try {							
+				if(parametrosDTO.getAmbiente().equals("desarrollo"))
+					id_facebook = "DEV";
+				else
+					id_facebook = llamadasWSBO.insertUpdateArticleFB(contentDTO, parametrosDTO);								
 				LOG.debug("id_facebook: "+id_facebook);
 			} catch (LlamadasWSBOException boe) {
 				LOG.error("Exception  json: "+boe.getMessage());
@@ -441,7 +444,7 @@ public class ProcesoWorkflowBO {
 			notaElasticDTO.setTitulo(contentDTO.getFcTitulo());
 			notaElasticDTO.setDescripcion(contentDTO.getFcDescripcion());
 			notaElasticDTO.setUrl_imagen(contentDTO.getFcImgPrincipal());
-			notaElasticDTO.setUrl_nota(urlNota);
+			notaElasticDTO.setUrl_nota(urlNota+"/");
 			notaElasticDTO.setTipo(contentDTO.getFcIdTipoNota());
 			notaElasticDTO.setKeywords(contentDTO.getFcKeywords());			
 			

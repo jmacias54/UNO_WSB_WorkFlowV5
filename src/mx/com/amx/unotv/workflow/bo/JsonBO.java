@@ -82,7 +82,20 @@ public class JsonBO {
 			galeria = galeria.replace("/portal/unotv/imagenes_galeria/", "https://www.unotv.com/imagenes_galeria/");
 			galeria = galeria.replace("/unotv/imagenes_galeria/", "https://www.unotv.com/imagenes_galeria/");
 			
+			
+			
 			contenido_nota = contenido_nota.replace("[=GALERIA=]",galeria);
+			
+			//Repleza galeria por separado.
+			if(!contentDTO.getClGaleriaImagenes().equals(""))
+			{
+				String jsonGaleria = contentDTO.getJsonGaleria();
+				jsonGaleria = jsonGaleria.replace("/portal/unotv/imagenes_galeria/", "https://www.unotv.com/imagenes_galeria/");
+				jsonGaleria = jsonGaleria.replace("/unotv/imagenes_galeria/", "https://www.unotv.com/imagenes_galeria/");
+				contenido_nota = remplazaGaleriaItem(jsonGaleria, contenido_nota);
+			}
+			
+			
 			contenido_nota = contenido_nota.replace("[=INFOGRAFIA=]", "https://www.unotv.com"+contentDTO.getFcImgInfografia());			
 			jsonNota.put("contenido_nota",contenido_nota);
 			
@@ -405,6 +418,40 @@ public static String cambiaCaracteres(String texto) {
 		}
 	}
 
+	
+	
+	/*
+	 * 
+	 * */
+	private String remplazaGaleriaItem(String strJsonGaeria, String contenido_nota)
+	{
+		LOG.debug("strJsonGaeria: "+strJsonGaeria);
+		try {
+			
+			JSONObject jsonGaleria = new JSONObject(strJsonGaeria);		
+			LOG.debug("Total Img: "+jsonGaleria.getString("contadorArchivos0"));
+			int totalImg = Integer.valueOf(jsonGaleria.getString("contadorArchivos0"));			
+			LOG.debug("Total de imagesn: "+totalImg);
+			
+			//LOG
+			for (int i = 0; i <= totalImg; i++) {				
+				String itemGallery = "<div class=\"gallery\"><div class=\"item-gallery\"><img alt=\"$GALLERY_DESCRIPCION_IMG$\" src=\"$GALLERY_URL_IMG$\"><p>$GALLERY_DESCRIPCION_IMG$<u>$GALLERY_PIE_IMG$</u></p></div></div>";				
+				itemGallery = itemGallery.replace("$GALLERY_URL_IMG$",jsonGaleria.getString("name[0]["+i+"]"));
+				itemGallery = itemGallery.replace("$GALLERY_DESCRIPCION_IMG$",jsonGaleria.getString("descripcion[0]["+i+"]"));
+				itemGallery = itemGallery.replace("$GALLERY_PIE_IMG$",jsonGaleria.getString("pie[0]["+i+"]"));				
+				LOG.debug("[=foto"+i+"=]");
+				LOG.debug("name:        "+jsonGaleria.getString("name[0]["+i+"]"));
+				LOG.debug("descripcion: "+jsonGaleria.getString("descripcion[0]["+i+"]"));
+				LOG.debug("pie:         "+jsonGaleria.getString("pie[0]["+i+"]"));				
+				contenido_nota = contenido_nota.replace("[=foto"+i+"=]", itemGallery);				
+			}
+					
+		} catch (Exception e) {
+			LOG.error("Exception en remplazaGaleriaItem: ",e);
+		}		
+		return contenido_nota;
+		
+	}
 
 
 }//FIN CLASE

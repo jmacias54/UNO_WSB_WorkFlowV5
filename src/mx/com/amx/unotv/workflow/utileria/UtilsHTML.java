@@ -23,13 +23,13 @@ public class UtilsHTML {
 		LOG.debug("pathHTML: "+pathHTML);
 		try {
 			File fileHTML = new File(pathHTML+"/index.html") ;
-			File fileAMP = new File(pathHTML+"/amp.html") ;
-			File fileJSON = new File(pathHTML+"/detalle.json") ;
+			//File fileAMP = new File(pathHTML+"/amp.html") ;
+			//File fileJSON = new File(pathHTML+"/detalle.json") ;
 
 			//Borramos archivos
 			fileHTML.delete();
-			fileAMP.delete();
-			fileJSON.delete();
+			//fileAMP.delete();
+			//fileJSON.delete();
 			
 			//Borramos directorio
 			File directorio = new File(pathHTML) ;
@@ -84,7 +84,7 @@ public class UtilsHTML {
 				pw.close();
 				success = true;
 			} catch(Exception e){			
-				LOG.error("Error al obtener la plantilla " + rutaHMTL + ": ", e);
+				LOG.error("Error writeHTML " + rutaHMTL + ": ", e);
 				success = false;
 			}finally{
 				try{                    			              
@@ -147,6 +147,43 @@ public class UtilsHTML {
 		texto = texto.replaceAll("ç", "&#231;");
 		texto = texto.replaceAll("Ç", "&#199;");
 		texto = texto.replaceAll("'", "&#39;");		
+		return texto;
+	}
+	
+	/**
+	* Metodo que cambia caracteres especiales por caracteres en código HTML
+	* @param  String     
+	* @return String
+	* */
+	public static String removeCaracteres(String texto) 
+	{	
+		texto = texto.replaceAll("á", "a");
+		texto = texto.replaceAll("é", "e");
+		texto = texto.replaceAll("í", "i");
+		texto = texto.replaceAll("ó", "o");
+		texto = texto.replaceAll("ú", "u");  
+		texto = texto.replaceAll("Á", "A");
+		texto = texto.replaceAll("É", "E");
+		texto = texto.replaceAll("Í", "I");
+		texto = texto.replaceAll("Ó", "O");
+		texto = texto.replaceAll("Ú", "U");
+		texto = texto.replaceAll("ª", "");          
+		texto = texto.replaceAll("ä", "a");
+		texto = texto.replaceAll("ë", "e");
+		texto = texto.replaceAll("ï", "i");
+		texto = texto.replaceAll("ö", "o");
+		texto = texto.replaceAll("ü", "u");    
+		texto = texto.replaceAll("Ä", "A");
+		texto = texto.replaceAll("Ë", "E");
+		texto = texto.replaceAll("Ï", "I");
+		texto = texto.replaceAll("Ö", "O");
+		texto = texto.replaceAll("Ü", "U");
+		texto = texto.replaceAll("“", "");        
+		texto = texto.replaceAll("”", "");
+		texto = texto.replaceAll("‘", "");
+		texto = texto.replaceAll("’", "");
+		texto = texto.replaceAll("…", "");		
+		texto = texto.replaceAll("'", "");		
 		return texto;
 	}
 	

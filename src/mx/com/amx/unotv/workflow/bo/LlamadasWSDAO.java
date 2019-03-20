@@ -540,5 +540,112 @@ public class LlamadasWSDAO {
 	}
 	
 	
+
+	/**
+	 * Metodo que es utilizado para hacer una llamada al servicio que se conecta a la
+	 * base de datos para llevar a cabo un delete en la tabla de negocio
+	 * @param  ContentDTO
+	 * @return boolean
+	 * @throws LlamadasWSDAOException
+	 * */
+	public boolean _deleteRevNotaBD(ContentDTO contentDTO, ParametrosDTO parametrosDTO) throws LlamadasWSDAOException {
+		LOG.debug(" ---  deleteRevNotaBD en LlamadasWSDAO --- ");		
+		try {
+			String URL_WS =parametrosDTO.getUrl_dominio_dat()+parametrosDTO.getUrl_wsd_WorkFlow()+"/rest/workflow-controller/deleteNotaBD";
+			LOG.debug(" *** URL_WS: "+URL_WS);
+			HttpEntity<ContentDTO> entity = new HttpEntity<ContentDTO>( contentDTO );
+			return restTemplate.postForObject(URL_WS, entity, Boolean.class);
+		}catch(RestClientResponseException rre){
+			LOG.error("--- RestClientResponseException deleteRevNotaBD [WS DAO]: --- " + rre.getResponseBodyAsString());
+			LOG.error("--- RestClientResponseException deleteRevNotaBD [WS DAO]: --- ", rre);
+			throw new LlamadasWSDAOException(rre.getResponseBodyAsString());
+		} catch(Exception e) {
+			LOG.error("--- Exception deleteRevNotaBD [BO]: --- ",e);
+			throw new LlamadasWSDAOException(e.getMessage());
+		}		
+		
+	}
+	
+	
+	
+	/**
+	 * Metodo que es utilizado para hacer una llamada al servicio que se conecta a la
+	 * base de datos para verificar la existencia del contenido, si este no existe es tratado como
+	 * un insert, por otro lado si el contenido ya existe, se hace un actualización del mismo.
+	 * @param ContentDTO
+	 * @param parametrosDTO
+	 * @return boolean
+	 * @throws LlamadasWSDAOException
+	 * */
+	public String _setRevNotaBD(ContentDTO contentDTO, ParametrosDTO parametrosDTO) throws LlamadasWSDAOException {
+		LOG.debug(" --- setRevNotaBD [WS DAO] --- ");				
+		int respuesta = 0;
+		String nota_db = "";
+		try {	
+			
+			String URL_WS_BASE = parametrosDTO.getUrl_dominio_dat()+parametrosDTO.getUrl_wsd_WorkFlow();						
+			
+			//Validamos si la nota existe en la BD									
+			String urlNotaRegistrada = URL_WS_BASE+"/rest/workflow-controller/existeRevNota";
+			
+			HttpEntity<ContentDTO> entity = new HttpEntity<ContentDTO>( contentDTO );
+			LOG.debug("--- urlNotaRegistrada: --- "+urlNotaRegistrada);
+			
+			respuesta = restTemplate.postForObject(urlNotaRegistrada, entity, Integer.class);
+			LOG.debug("--- La nota esta resgitrada: "+respuesta);
+			
+			//Procesamos la nota en la base de datos
+			if(respuesta > 0)
+			{			
+				
+				String urlUpdate = URL_WS_BASE+"/rest/workflow-controller/updateRevNotaBD";
+				LOG.info(" --- Se actualiza la nota --- ");
+				LOG.debug(urlUpdate);
+				respuesta=restTemplate.postForObject(urlUpdate, entity, Integer.class);
+				LOG.debug(" --- updateNotaBD: "+respuesta);
+				// LOG.debug(URL_WS_BASE+parametrosDTO.getMet_wsd_WorkFlow_updateNotaHistoricoBD());
+				// respuesta=restTemplate.postForObject(URL_WS_BASE+parametrosDTO.getMet_wsd_WorkFlow_updateNotaHistoricoBD(), entity, Integer.class);
+				// LOG.debug("updateNotaHistoricoBD: "+respuesta);											
+				LOG.info("graylog-nota-actualizada");
+				LOG.info("graylog-nota-insertada");
+				LOG.info("graylog-actualiza-"+contentDTO.getFcIdTipoNota());				
+				LOG.info("graylog-actualiza-"+contentDTO.getFcSeccion());
+				LOG.info("graylog-actualiza-"+contentDTO.getFcTipoSeccion());
+				LOG.info("graylog-actualiza-"+contentDTO.getFcIdCategoria());
+				LOG.info("graylog-actualiza-"+contentDTO.getPortal_uid() );
+				nota_db="UPDATE";
+			}
+			else
+			{		 
+				LOG.info("--- Se inserta nueva nota --- ");
+				String urlInsert = URL_WS_BASE+"/rest/workflow-controller/insertRevNotaBD";
+				LOG.debug(urlInsert);
+				respuesta = restTemplate.postForObject(urlInsert, entity, Integer.class);				
+				LOG.debug(" --- insertNotaBD: "+respuesta);				
+				// respuesta=restTemplate.postForObject(URL_WS_BASE+parametrosDTO.getMet_wsd_WorkFlow_insertNotaHistoricoBD(), entity, Integer.class);
+				// LOG.debug(URL_WS_BASE+parametrosDTO.getMet_wsd_WorkFlow_insertNotaHistoricoBD());
+				// LOG.debug("insertNotaHistoricoBD: "+respuesta);								
+				LOG.info("graylog-nota-insertada");
+				LOG.info("graylog-inserta-"+contentDTO.getFcIdTipoNota());				
+				LOG.info("graylog-inserta-"+contentDTO.getFcSeccion());
+				LOG.info("graylog-inserta-"+contentDTO.getFcTipoSeccion());
+				LOG.info("graylog-inserta-"+contentDTO.getFcIdCategoria());
+				LOG.info("graylog-inserta-"+contentDTO.getPortal_uid() );				
+				nota_db="INSERT";
+			}				
+			
+			return nota_db;
+		}catch(RestClientResponseException rre){
+			LOG.error(" --- RestClientResponseException setRevNotaBD [WS DAO]: --- " + rre.getResponseBodyAsString());
+			LOG.error(" --- RestClientResponseException setRevNotaBD [WS DAO]: --- ", rre);
+			throw new LlamadasWSDAOException(rre.getResponseBodyAsString());
+		}catch(Exception e) {																
+			LOG.error(" --- Exception setRevNotaBD [WS DAO]: --- ",e);
+			throw new LlamadasWSDAOException(e.getMessage());
+		}		
+	}	
+	
+	
+	
 }//FIN CLASE
 

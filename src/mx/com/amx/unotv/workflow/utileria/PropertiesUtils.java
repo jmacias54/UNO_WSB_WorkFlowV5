@@ -96,6 +96,11 @@ public class PropertiesUtils {
 			parametrosDTO.setCorreo_error_cuerpo(propsServer.getProperty("correo_error_cuerpo"));
 			parametrosDTO.setCorreo_error_smtpsender(propsServer.getProperty("correo_error_smtpsender"));
 			
+			parametrosDTO.setCorreo_caduca_para(propsServer.getProperty("correo_caduca_para"));
+			parametrosDTO.setCorreo_caduca_asunto(propsServer.getProperty("correo_caduca_asunto"));			
+			parametrosDTO.setCorreo_caduca_cuerpo(propsServer.getProperty("correo_caduca_cuerpo"));
+			parametrosDTO.setCorreo_caduca_smtpsender(propsServer.getProperty("correo_caduca_smtpsender"));
+			
 			parametrosDTO.setJs_amp_ooyala_player(propsServer.getProperty("js_amp_ooyala_player"));
 			parametrosDTO.setJs_amp_youtube(propsServer.getProperty("js_amp_youtube"));
 			parametrosDTO.setJs_amp_twitter(propsServer.getProperty("js_amp_twitter"));

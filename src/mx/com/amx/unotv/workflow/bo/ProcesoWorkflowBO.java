@@ -370,6 +370,9 @@ public class ProcesoWorkflowBO {
 			} catch (Exception e) {
 				LOG.error("AKAMI ERROR"+e.getMessage());			
 			}
+			
+			//Enviamos correo para avisar que se borro nota
+			correoBO.enviaCorreoCaducar(parametrosDTO, contentDTO, urlNota);
 
 		//catch errores en proceso de borrado	
 		}catch (LlamadasWSDAOException daoException){

@@ -70,6 +70,12 @@ private static final long serialVersionUID = 1L;
 	private String correo_error_cuerpo;
 	private String correo_error_smtpsender;
 	
+	private String correo_caduca_para;
+	private String correo_caduca_asunto;
+	private String correo_caduca_cuerpo;
+	private String correo_caduca_smtpsender;
+	
+	
 	private String js_amp_ooyala_player;
 	private String js_amp_youtube;
 	private String js_amp_instagram;
@@ -590,7 +596,30 @@ private static final long serialVersionUID = 1L;
 	public void setJs_amp_twitter(String js_amp_twitter) {
 		this.js_amp_twitter = js_amp_twitter;
 	}
-	
-	
+	public String getCorreo_caduca_para() {
+		return correo_caduca_para;
+	}
+	public void setCorreo_caduca_para(String correo_caduca_para) {
+		this.correo_caduca_para = correo_caduca_para;
+	}
+	public String getCorreo_caduca_asunto() {
+		return correo_caduca_asunto;
+	}
+	public void setCorreo_caduca_asunto(String correo_caduca_asunto) {
+		this.correo_caduca_asunto = correo_caduca_asunto;
+	}
+	public String getCorreo_caduca_cuerpo() {
+		return correo_caduca_cuerpo;
+	}
+	public void setCorreo_caduca_cuerpo(String correo_caduca_cuerpo) {
+		this.correo_caduca_cuerpo = correo_caduca_cuerpo;
+	}
+	public String getCorreo_caduca_smtpsender() {
+		return correo_caduca_smtpsender;
+	}
+	public void setCorreo_caduca_smtpsender(String correo_caduca_smtpsender) {
+		this.correo_caduca_smtpsender = correo_caduca_smtpsender;
+	}
+		
 	
 }
